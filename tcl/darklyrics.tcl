@@ -16,8 +16,6 @@ proc get_lyrics {trackinfo} {
     set query [::http::formatQuery q "$artist $title"]
     set query [string map {"%20" +} $query]
 
-    puts $query
-
     if { [catch {set token [::http::geturl "$url?$query" -timeout $timeout]} err] } { # we're supposed to use GET
         puts "TCL Error: $err (query: $query)"
         return {}
