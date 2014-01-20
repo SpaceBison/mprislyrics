@@ -15,6 +15,7 @@ int main(int argc, char **argv)
     lyrics_plugins.push_back(new TclPlugin("tcl/darklyrics.tcl"));
     lyrics_plugins.push_back(new TclPlugin("tcl/encyclopediametallum.tcl"));
     lyrics_plugins.push_back(new TclPlugin("tcl/lyricstime.tcl"));
+    lyrics_plugins.push_back(new TclPlugin("tcl/releaselyrics.tcl"));
     lyrics_plugins.push_back(new TclPlugin("tcl/tekstowo.tcl"));
     //lyrics_plugins.push_back(new TclPlugin("tcl/rapgenius.tcl"));
     lyrics_plugins.push_back(new TclPlugin("tcl/lyricwiki.tcl"));
