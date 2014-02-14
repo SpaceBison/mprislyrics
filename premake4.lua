@@ -12,8 +12,8 @@ solution "MPRISLyrics"
                     "**.cpp" }
     includedirs   { "include" }
 
-    DEPS =        "dbus-1 tcl"
-    libdirs       { os.findlib("dbus-1"),
+    DEPS =        "dbus-c++-1 tcl"
+    libdirs       { os.findlib("dbus-c++-1"),
                     os.findlib("tcl") }
     linkoptions   { "`pkg-config --libs " .. DEPS .. "`",
                     "-ltcl" }

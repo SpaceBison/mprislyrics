@@ -1,16 +1,46 @@
 #include <iostream>
 #include <vector>
+#include <dbus-c++/dbus.h>
 #include <common/trackinfo.hpp>
 #include <lyricsplugin/lyricsplugin.hpp>
 #include <lyricsplugin/tclplugin.hpp>
-#include <mpris/mpriscontroller.hpp>
+#include <dbus/dbusproperties.hpp>
+#include <dbus/mpris2player.hpp>
+
+std::vector<LyricsPlugin*> lyrics_plugins;
+MPRIS2Player* player;
+TrackInfo old_ti;
+
+void display_lyrics()
+{
+    TrackInfo ti = player->getTrackInfo();
+
+    if(ti == old_ti)
+        return;
+
+    old_ti = ti;
+
+    std::cout << std::string( 70, '\n' ) << ti.artist << " - " << ti.title << std::endl;
+
+    bool found = false;
+    for(LyricsPlugin* lp : lyrics_plugins)
+    {
+        std::cout << lp->getDescription() << "..." << std::endl;
+        std::string lyrics = lp->getLyrics(ti);
+        if(lyrics.size())
+        {
+            std::cout << std::endl << lyrics << std::endl;
+            found = true;
+            break;
+        }
+    }
+    if(!found)
+        std::cout << "No results :(" << std::endl;
+}
 
 int main(int argc, char **argv)
 {
     TclPlugin::initTcl(argv[0]);
-    MprisController mpris;
-    TrackInfo ti;
-    std::vector<LyricsPlugin*> lyrics_plugins;
 
     lyrics_plugins.push_back(new TclPlugin("tcl/darklyrics.tcl"));
     lyrics_plugins.push_back(new TclPlugin("tcl/encyclopediametallum.tcl"));
@@ -20,28 +50,40 @@ int main(int argc, char **argv)
     //lyrics_plugins.push_back(new TclPlugin("tcl/rapgenius.tcl"));
     lyrics_plugins.push_back(new TclPlugin("tcl/lyricwiki.tcl"));
 
-    while(true)
+
+    DBus::BusDispatcher dispatcher;    
+    DBus::default_dispatcher = &dispatcher;
+ 
+    DBus::Connection conn = DBus::Connection::SessionBus();
+    DBus::CallMessage request("org.freedesktop.DBus", "/", "org.freedesktop.DBus", "ListNames");
+    DBus::Message reply = conn.send_blocking(request);
+    DBus::MessageIter ri = reply.reader();
+    std::vector<std::string> names;
+    ri >> names;
+
+    const std::string mpris2path("/org/mpris/MediaPlayer2");
+    const std::string mpris2interfacePrefix("org.mpris.MediaPlayer2");
+    std::string playerBusName;
+
+    for(std::string s : names)
     {
-        mpris.waitForTrackChange();
-        ti = mpris.getTrackInfo();
-
-        std::cout << std::string( 70, '\n' ) << ti.artist << " - " << ti.title << std::endl;
-
-        bool found = false;
-        for(LyricsPlugin* lp : lyrics_plugins)
+        if(!s.compare(0, mpris2interfacePrefix.length(), mpris2interfacePrefix))
         {
-            std::cout << lp->getDescription() << "..." << std::endl;
-            std::string lyrics = lp->getLyrics(ti);
-            if(lyrics.size())
-            {
-                std::cout << std::endl << lyrics << std::endl;
-                found = true;
-                break;
-            }
+            playerBusName = s;
+            break;
         }
-        if(!found)
-            std::cout << "No results :(" << std::endl;
     }
+
+    std::cout << "*** Connecting to " << playerBusName << std::endl;
+
+    player = new MPRIS2Player(conn, mpris2path.c_str(), playerBusName.c_str());
+    DBusProperties dbus(conn);
+
+    
+
+    dbus.setCallback(display_lyrics);
+
+    dispatcher.enter();
 
     return 0;
 }
