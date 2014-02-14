@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <csignal>
 #include <dbus-c++/dbus.h>
 #include <common/trackinfo.hpp>
 #include <lyricsplugin/lyricsplugin.hpp>
@@ -7,9 +8,11 @@
 #include <dbus/dbusproperties.hpp>
 #include <dbus/mpris2player.hpp>
 
+DBus::BusDispatcher dispatcher;
 std::vector<LyricsPlugin*> lyrics_plugins;
 MPRIS2Player* player;
 TrackInfo old_ti;
+
 
 void display_lyrics()
 {
@@ -38,6 +41,20 @@ void display_lyrics()
         std::cout << "No results :(" << std::endl;
 }
 
+void signal_handler(int signal)
+{
+    switch(signal)
+    {
+    case SIGINT:
+    case SIGTERM:
+        delete player;
+        lyrics_plugins.clear();
+        dispatcher.leave();
+        exit(0);
+    break;
+    }
+}
+
 int main(int argc, char **argv)
 {
     TclPlugin::initTcl(argv[0]);
@@ -50,10 +67,7 @@ int main(int argc, char **argv)
     //lyrics_plugins.push_back(new TclPlugin("tcl/rapgenius.tcl"));
     lyrics_plugins.push_back(new TclPlugin("tcl/lyricwiki.tcl"));
 
-
-    DBus::BusDispatcher dispatcher;    
     DBus::default_dispatcher = &dispatcher;
- 
     DBus::Connection conn = DBus::Connection::SessionBus();
     DBus::CallMessage request("org.freedesktop.DBus", "/", "org.freedesktop.DBus", "ListNames");
     DBus::Message reply = conn.send_blocking(request);
@@ -79,11 +93,12 @@ int main(int argc, char **argv)
     player = new MPRIS2Player(conn, mpris2path.c_str(), playerBusName.c_str());
     DBusProperties dbus(conn);
 
-    
-
     dbus.setCallback(display_lyrics);
 
     dispatcher.enter();
+
+    signal(SIGINT, signal_handler);
+    signal(SIGTERM, signal_handler);
 
     return 0;
 }
