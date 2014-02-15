@@ -7,38 +7,34 @@
 #include <lyricsplugin/tclplugin.hpp>
 #include <dbus/dbusproperties.hpp>
 #include <dbus/mpris2player.hpp>
+#include <ui/ncursesui.hpp>
 
 DBus::BusDispatcher dispatcher;
 std::vector<LyricsPlugin*> lyrics_plugins;
 MPRIS2Player* player;
 TrackInfo old_ti;
-
+NcursesUI ui;
 
 void display_lyrics()
 {
     TrackInfo ti = player->getTrackInfo();
+    std::string lyrics("Not found :(");
 
     if(ti == old_ti)
         return;
 
     old_ti = ti;
 
-    std::cout << std::string( 70, '\n' ) << ti.artist << " - " << ti.title << std::endl;
-
     bool found = false;
     for(LyricsPlugin* lp : lyrics_plugins)
     {
-        std::cout << lp->getDescription() << "..." << std::endl;
-        std::string lyrics = lp->getLyrics(ti);
+        ui.refresh("Trying " + lp->getDescription());
+        lyrics = lp->getLyrics(ti);
         if(lyrics.size())
-        {
-            std::cout << std::endl << lyrics << std::endl;
-            found = true;
             break;
-        }
     }
-    if(!found)
-        std::cout << "No results :(" << std::endl;
+    
+    ui.refresh(lyrics);
 }
 
 void signal_handler(int signal)
@@ -87,8 +83,6 @@ int main(int argc, char **argv)
             break;
         }
     }
-
-    std::cout << "*** Connecting to " << playerBusName << std::endl;
 
     player = new MPRIS2Player(conn, mpris2path.c_str(), playerBusName.c_str());
     DBusProperties dbus(conn);
