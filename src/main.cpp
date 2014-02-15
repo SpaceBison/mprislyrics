@@ -28,13 +28,14 @@ void display_lyrics()
     bool found = false;
     for(LyricsPlugin* lp : lyrics_plugins)
     {
-        ui.refresh("Trying " + lp->getDescription());
+        ui.setMsg("Trying " + lp->getDescription());
         lyrics = lp->getLyrics(ti);
         if(lyrics.size())
             break;
     }
-    
-    ui.refresh(lyrics);
+
+    ui.setMsg("");
+    ui.setText(lyrics);
 }
 
 void signal_handler(int signal)
@@ -89,10 +90,13 @@ int main(int argc, char **argv)
 
     dbus.setCallback(display_lyrics);
 
-    dispatcher.enter();
-
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
+
+    ui.setText("siema");
+    ui.setMsg("elo");
+
+    dispatcher.enter();
 
     return 0;
 }

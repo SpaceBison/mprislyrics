@@ -3,14 +3,16 @@
 
 #include <string>
 #include <thread>
+#include <ncurses.h>
 #include <common/trackinfo.hpp>
 
 class NcursesUI
 {
     public:
         NcursesUI();
-        virtual ~NcursesUI();
-        void refresh(std::string lyrics);
+        ~NcursesUI();
+        void setText(std::string text);
+        void setMsg(std::string msg);
     
     private:
         void mainLoop();
@@ -20,6 +22,9 @@ class NcursesUI
 
         bool running;
         std::thread thread;
+        WINDOW* textPad;
+        int scroll;
+        int rows, cols;
 };
 
 #endif /* NCURSESUI_HPP */ 
