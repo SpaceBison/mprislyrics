@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <csignal>
+#include <thread>
 #include <dbus-c++/dbus.h>
 #include <common/trackinfo.hpp>
 #include <lyricsplugin/lyricsplugin.hpp>
@@ -34,8 +35,13 @@ void display_lyrics()
             break;
     }
 
-    ui.setMsg("");
+    ui.setMsg(ti.artist + " - " + ti.title);
     ui.setText(lyrics);
+}
+
+void lyrics_changed()
+{
+    std::thread(display_lyrics);
 }
 
 void signal_handler(int signal)
